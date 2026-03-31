@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "/Users/udaygrewal/Library/Python/3.9/bin/uvicorn",
+      "runtimeArgs": ["server:app", "--host", "0.0.0.0", "--port", "8000", "--loop", "asyncio", "--http", "h11", "--ws", "websockets"],
+      "cwd": "/Users/udaygrewal/Desktop/deepgram_poc",
+      "port": 8000
+    }
+  ]
+}

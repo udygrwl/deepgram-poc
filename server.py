@@ -14,6 +14,7 @@ from transcriber import start_transcription_session, active_sessions
 from rag import get_rag_context, get_session_summary
 
 # load_dotenv reads your .env file
+import os
 from dotenv import load_dotenv
 load_dotenv()
 

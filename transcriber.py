@@ -30,12 +30,11 @@ async def start_transcription_session(websocket):
             async def receive_from_deepgram():
                 import time
                 print(f"[{time.time():.2f}] receive_from_deepgram started")
-                # Accumulate is_final chunks until speech_final
-                pending_text = ""
-                pending_words = []
+                # Accumulate text between speech_final boundaries for analysis
+                utterance_text = ""
+                last_speaker = "Agent"
                 try:
                     async for message in dg_ws:
-                        print(f"[{time.time():.2f}] DG message received: {str(message)[:100]}")
                         try:
                             data = json.loads(message)
                             transcript_text = data.get("channel", {}).get("alternatives", [{}])[0].get("transcript", "")
@@ -49,28 +48,12 @@ async def start_transcription_session(websocket):
                                 # Pure interim — show as in-progress
                                 await websocket.send_json({
                                     "type": "interim",
-                                    "text": pending_text + " " + transcript_text if pending_text else transcript_text
+                                    "text": transcript_text
                                 })
                                 continue
 
-                            # is_final=true — this chunk is finalized
-                            chunk_words = data.get("channel", {}).get("alternatives", [{}])[0].get("words", [])
-                            pending_text = (pending_text + " " + transcript_text).strip() if pending_text else transcript_text
-                            pending_words.extend(chunk_words)
-
-                            if not speech_final:
-                                # More chunks coming — show accumulated text as interim
-                                await websocket.send_json({
-                                    "type": "interim",
-                                    "text": pending_text
-                                })
-                                continue
-
-                            # speech_final=true — utterance complete, use accumulated text + words
-                            transcript_text = pending_text
-                            words = pending_words
-                            pending_text = ""
-                            pending_words = []
+                            # is_final=true — post this chunk as a transcript immediately
+                            words = data.get("channel", {}).get("alternatives", [{}])[0].get("words", [])
 
                             # Split words into segments by speaker changes
                             segments = []
@@ -86,49 +69,61 @@ async def start_transcription_session(websocket):
                             if current_words:
                                 segments.append((current_speaker, " ".join(cw.get("punctuated_word", cw.get("word", "")) for cw in current_words)))
 
-                            # Send each speaker segment as its own transcript message
+                            # If no word-level data, use transcript as single segment
+                            if not segments:
+                                segments = [(0, transcript_text)]
+
+                            # Clear interim and send each speaker segment
+                            await websocket.send_json({"type": "interim", "text": ""})
                             for speaker_num, segment_text in segments:
                                 speaker = "Agent" if speaker_num == 0 else "Customer"
-                                print(f"[{__import__('time').time():.2f}] Speaker: {speaker_num} -> {speaker} | '{segment_text[:50]}'")
+                                last_speaker = speaker
+                                print(f"[{time.time():.2f}] Speaker: {speaker_num} -> {speaker} | '{segment_text[:50]}'")
                                 await websocket.send_json({
                                     "type": "transcript",
                                     "speaker": speaker,
                                     "text": segment_text
                                 })
 
-                            # Track conversation history for contextual analysis
-                            history = active_sessions[session_id]["history"]
-                            history.append(f"{speaker}: {transcript_text}")
-                            recent = history[-10:]  # last 10 lines
+                            # Accumulate for analysis
+                            utterance_text = (utterance_text + " " + transcript_text).strip() if utterance_text else transcript_text
 
-                            print(f"[{__import__('time').time():.2f}] Starting analysis with {len(recent)} lines of context")
-                            analysis = await asyncio.to_thread(analyze_sentence, speaker, transcript_text, recent)
-                            print(f"[{__import__('time').time():.2f}] Analysis result: {analysis}")
-                            escalation_state = should_escalate(analysis)
-                            active_sessions[session_id]["escalation_state"] = escalation_state
+                            if speech_final:
+                                # Utterance complete — run analysis on accumulated text
+                                analysis_text = utterance_text
+                                utterance_text = ""
 
-                            print(f"[{__import__('time').time():.2f}] Sending escalation: state={escalation_state}, sentiment={analysis.get('sentiment', 0)}")
-                            await websocket.send_json({
-                                "type": "escalation",
-                                "state": escalation_state,
-                                "keywords": analysis.get("keywords", []),
-                                "sentiment": analysis.get("sentiment", 0)
-                            })
+                                history = active_sessions[session_id]["history"]
+                                history.append(f"{last_speaker}: {analysis_text}")
+                                recent = history[-10:]
 
-                            save_transcript(
-                                session_id=session_id,
-                                speaker=speaker,
-                                text=transcript_text,
-                                sentiment=analysis.get("sentiment"),
-                                escalation_risk=analysis.get("escalation_risk"),
-                                keywords=json.dumps(analysis.get("keywords", []))
-                            )
+                                print(f"[{time.time():.2f}] Starting analysis with {len(recent)} lines of context")
+                                analysis = await asyncio.to_thread(analyze_sentence, last_speaker, analysis_text, recent)
+                                print(f"[{time.time():.2f}] Analysis result: {analysis}")
+                                escalation_state = should_escalate(analysis)
+                                active_sessions[session_id]["escalation_state"] = escalation_state
+
+                                await websocket.send_json({
+                                    "type": "escalation",
+                                    "state": escalation_state,
+                                    "keywords": analysis.get("keywords", []),
+                                    "sentiment": analysis.get("sentiment", 0)
+                                })
+
+                                save_transcript(
+                                    session_id=session_id,
+                                    speaker=last_speaker,
+                                    text=analysis_text,
+                                    sentiment=analysis.get("sentiment"),
+                                    escalation_risk=analysis.get("escalation_risk"),
+                                    keywords=json.dumps(analysis.get("keywords", []))
+                                )
 
                         except Exception as e:
                             print(f"Error processing message: {e}")
                 except Exception as e:
-                    print(f"[{__import__('time').time():.2f}] Deepgram connection error: {e}")
-                print(f"[{__import__('time').time():.2f}] receive_from_deepgram EXITED")
+                    print(f"[{time.time():.2f}] Deepgram connection error: {e}")
+                print(f"[{time.time():.2f}] receive_from_deepgram EXITED")
 
             async def send_to_deepgram():
                 import time
@@ -144,7 +139,13 @@ async def start_transcription_session(websocket):
             await asyncio.gather(receive_from_deepgram(), send_to_deepgram())
 
     except websockets.exceptions.InvalidStatusCode as e:
-        print(f"Status: {e.status_code}")
-        raise
+        print(f"Deepgram auth failed, status: {e.status_code}")
+        await websocket.send_json({"type": "error", "message": f"Deepgram connection failed (status {e.status_code})"})
+    except Exception as e:
+        print(f"Deepgram connection error: {e}")
+        try:
+            await websocket.send_json({"type": "error", "message": f"Deepgram connection error: {e}"})
+        except:
+            pass
 
     return session_id
