@@ -26,7 +26,16 @@ async def start_transcription_session(websocket):
     await websocket.send_json({"type": "session_started", "session_id": session_id})
 
     try:
-        async with websockets.connect(DEEPGRAM_URL, extra_headers=headers, compression=None) as dg_ws:
+        # websockets v13+ renamed extra_headers to additional_headers
+        ws_kwargs = {"compression": None}
+        ws_ver = int(websockets.__version__.split('.')[0])
+        print(f"[transcriber] websockets version: {websockets.__version__}, key prefix: {key[:8]}...")
+        if ws_ver >= 13:
+            ws_kwargs["additional_headers"] = headers
+        else:
+            ws_kwargs["extra_headers"] = headers
+        async with websockets.connect(DEEPGRAM_URL, **ws_kwargs) as dg_ws:
+            print("[transcriber] Deepgram connected successfully")
             async def receive_from_deepgram():
                 import time
                 print(f"[{time.time():.2f}] receive_from_deepgram started")
