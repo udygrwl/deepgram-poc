@@ -1,0 +1,336 @@
+/* Reset default browser styles — every browser adds its own padding and margins */
+/* This gives us a clean slate */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Main page — dark background, full height, column layout */
+/* This is a professional dark UI — standard for contact center tools */
+body {
+    background-color: #0f0f0f;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    /* -apple-system uses the native system font — looks clean on any OS */
+    height: 100vh;
+    /* 100vh = 100% of the viewport height — fills the whole screen */
+    display: flex;
+    flex-direction: column;
+    /* flex column means elements stack vertically */
+    overflow: hidden;
+    /* Prevents page scrolling — we want the transcript to scroll, not the page */
+}
+
+/* Top bar — fixed height, space between items */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* space-between pushes items to edges with space in the middle */
+    padding: 16px 24px;
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+    height: 64px;
+    flex-shrink: 0;
+    /* flex-shrink: 0 means this element never gets smaller even if space is tight */
+}
+
+/* Call status indicator on the left */
+.call-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #888;
+}
+
+/* The colored dot next to the status text */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    /* 50% border-radius makes a circle */
+    background-color: #444;
+    /* Gray when not on a call */
+}
+
+/* Green dot when call is live */
+.status-dot.live {
+    background-color: #22c55e;
+    /* Pulse animation draws attention to the live indicator */
+    animation: pulse 2s infinite;
+}
+
+/* Pulse animation — gently fades in and out */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Call timer in the center */
+.timer {
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    /* tabular-nums prevents the timer from jumping around as digits change */
+    color: #ffffff;
+}
+
+/* Sentiment bar — horizontal bar showing current call sentiment */
+.sentiment-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sentiment-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sentiment-bar {
+    width: 120px;
+    height: 8px;
+    background-color: #2a2a2a;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.sentiment-bar-fill {
+    height: 100%;
+    width: 50%;
+    border-radius: 4px;
+    background-color: #888;
+    transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+/* THE ESCALATION BUTTON */
+.escalate-btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: 2px solid #ffffff;
+    background: transparent;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* transition makes color changes smooth instead of instant */
+}
+
+/* Solid red — model suggests escalation */
+.escalate-btn.warn,
+.escalate-btn.suggest {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    /* rgba adds transparency to the background */
+}
+
+/* Blinking red — model says escalate now */
+.escalate-btn.escalate-now {
+    border-color: #ef4444;
+    color: #ffffff;
+    background: #ef4444;
+    animation: blink 0.5s ease-in-out 10;
+    /* blink 10 times = 5 seconds at 0.5s per blink */
+}
+
+/* Blink animation — flashes between full opacity and invisible */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Main transcript area — scrollable, takes remaining space */
+.transcript-container {
+    flex: 1;
+    /* flex: 1 means take all available space between header and controls */
+    overflow-y: auto;
+    /* auto adds scrollbar only when content overflows */
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* gap adds space between each message bubble */
+}
+
+/* Empty state message before call starts */
+.empty-state {
+    color: #444;
+    text-align: center;
+    margin-top: 40px;
+    font-size: 14px;
+}
+
+/* Individual message bubble */
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 65%;
+    /* Messages take up max 65% of width — leaves room for the other speaker */
+}
+
+/* Agent messages on the left */
+.message.agent {
+    align-self: flex-start;
+}
+
+/* Customer messages on the right */
+.message.customer {
+    align-self: flex-end;
+}
+
+/* Speaker label above the bubble */
+.speaker-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    color: #888;
+}
+
+.message.agent .speaker-label {
+    color: #60a5fa;
+    /* Blue for agent */
+}
+
+.message.customer .speaker-label {
+    color: #34d399;
+    /* Green for customer */
+    text-align: right;
+}
+
+/* The actual text bubble */
+.bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.message.agent .bubble {
+    background-color: #1e3a5f;
+    /* Dark blue for agent */
+    border-bottom-left-radius: 4px;
+    /* Flat corner on the side closest to the label — chat bubble effect */
+}
+
+.message.customer .bubble {
+    background-color: #1a3a2a;
+    /* Dark green for customer */
+    border-bottom-right-radius: 4px;
+}
+
+/* Sentiment indicator — colored dot inside the bubble */
+.sentiment-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.sentiment-dot.positive { background-color: #22c55e; }
+.sentiment-dot.neutral  { background-color: #888; }
+.sentiment-dot.negative { background-color: #ef4444; }
+
+/* Interim text — what's being said right now, not final yet */
+.interim-container {
+    padding: 8px 24px;
+    min-height: 32px;
+    /* min-height prevents layout jumping when interim text appears/disappears */
+}
+
+#interimText {
+    font-size: 13px;
+    color: #555;
+    font-style: italic;
+    /* italic signals this is in-progress, not final */
+}
+
+/* Bottom controls bar */
+.controls {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    background-color: #1a1a1a;
+    border-top: 1px solid #2a2a2a;
+    flex-shrink: 0;
+}
+
+/* Start call button — green */
+.start-btn {
+    flex: 1;
+    padding: 12px;
+    background-color: #22c55e;
+    color: #000000;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.start-btn:hover { opacity: 0.9; }
+
+.start-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* End call button — red */
+.end-btn {
+    flex: 1;
+    padding: 12px;
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.end-btn:hover { opacity: 0.9; }
+
+.end-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Speaker toggle button for testing */
+.speaker-toggle-btn {
+    padding: 12px 20px;
+    background-color: #2a2a2a;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.speaker-toggle-btn:hover {
+    background-color: #333;
+}
+
+.speaker-toggle-btn.customer {
+    border-color: #34d399;
+    color: #34d399;
+}
+
+.speaker-toggle-btn.agent {
+    border-color: #60a5fa;
+    color: #60a5fa;
+}

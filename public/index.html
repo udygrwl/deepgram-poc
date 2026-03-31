@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Center Live</title>
+    <!-- Link to our CSS file -->
+    <link rel="stylesheet" href="/static/style.css?v=8">
+</head>
+<body>
+
+    <!-- Top bar with call controls -->
+    <div class="header">
+        <div class="call-status" id="callStatus">
+            <!-- Shows LIVE or ENDED -->
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Ready</span>
+        </div>
+
+        <!-- Timer shows how long the call has been running -->
+        <div class="timer" id="timer">00:00</div>
+
+        <!-- Sentiment bar — shows current call sentiment from red (-1) to green (+1) -->
+        <div class="sentiment-bar-container">
+            <span class="sentiment-label">Sentiment</span>
+            <div class="sentiment-bar">
+                <div class="sentiment-bar-fill" id="sentimentBarFill"></div>
+            </div>
+        </div>
+
+        <!-- The escalation button — changes color based on state -->
+        <!-- Three states: normal (white), warn/suggest (solid red), escalate_now (blinking red) -->
+        <button class="escalate-btn" id="escalateBtn">
+            ESCALATE
+        </button>
+    </div>
+
+    <!-- Main transcript area -->
+    <div class="transcript-container" id="transcriptContainer">
+
+        <!-- Agent messages appear on the left -->
+        <!-- Customer messages appear on the right -->
+        <!-- This mirrors a chat interface which feels natural for call monitoring -->
+
+        <div class="empty-state" id="emptyState">
+            Press Start Call to begin transcription
+        </div>
+
+    </div>
+
+    <!-- Interim transcript — shows what's being said right now, before sentence is final -->
+    <!-- Grayed out to show it's still being processed -->
+    <div class="interim-container">
+        <span id="interimText"></span>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="controls">
+        <button class="start-btn" id="startBtn" onclick="startCall()">
+            Start Call
+        </button>
+        <button class="speaker-toggle-btn" id="speakerToggleBtn" onclick="toggleSpeaker()">
+            Speaker: Auto
+        </button>
+        <button class="speaker-toggle-btn" id="swapBtn" onclick="swapSpeakers()">
+            Swap
+        </button>
+        <button class="end-btn" id="endBtn" onclick="endCall()" disabled>
+            End Call
+        </button>
+    </div>
+
+    <!-- Load our JavaScript file -->
+    <script src="/static/app.js?v=8"></script>
+
+</body>
+</html>

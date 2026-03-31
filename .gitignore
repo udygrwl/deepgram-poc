@@ -1,0 +1,7 @@
+venv/
+.env
+contact_center.db
+__pycache__/
+deepgram-contact-center/
+*.pyc
+.DS_Store
